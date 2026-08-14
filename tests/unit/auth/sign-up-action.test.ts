@@ -32,7 +32,7 @@ describe("signup action", () => {
   });
 
   it("returns account-created after expected session validation failure", async () => {
-    vi.mocked(signUp).mockResolvedValueOnce({ token: "synthetic" });
+    vi.mocked(signUp).mockResolvedValueOnce({ token: "synthetic", user: { name: "Name", email: "email@example.test", role: "user" } });
     const { setSession } = await import("@/lib/auth/session.server");
     vi.mocked(setSession).mockRejectedValueOnce(new (await import("@/lib/auth/session-codec.server")).SessionValidationError());
     const data = new FormData();
@@ -41,7 +41,7 @@ describe("signup action", () => {
   });
 
   it("revalidates a tampered submitted returnTo", async () => {
-    vi.mocked(signUp).mockResolvedValueOnce({ token: "synthetic" });
+    vi.mocked(signUp).mockResolvedValueOnce({ token: "synthetic", user: { name: "Name", email: "email@example.test", role: "user" } });
     const data = new FormData();
     data.set("name", "Name"); data.set("email", "email@example.test"); data.set("phone", "1"); data.set("password", "same"); data.set("rePassword", "same"); data.set("returnTo", "//evil.example");
     await signUpAction({ status: "idle", name: "", email: "", phone: "" }, data);

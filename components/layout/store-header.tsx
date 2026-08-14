@@ -5,7 +5,7 @@ import { MobileMenu } from "./mobile-menu";
 import { PageContainer } from "./page-container";
 import { primaryNavigation, utilityNavigation } from "./navigation";
 
-export function StoreHeader() {
+export function StoreHeader({ accountHref }: { accountHref?: string } = {}) {
   const search = utilityNavigation[0];
   const cart = utilityNavigation[2];
 
@@ -43,7 +43,7 @@ export function StoreHeader() {
                 key={item.label}
                 aria-label={item.label}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm text-text-secondary hover:bg-surface-low hover:text-brand-primary"
-                href={item.href}
+                href={item.label === "Account" && accountHref ? accountHref : item.href}
                 title={item.label}
               >
                 {item.icon ? <StorefrontIcon name={item.icon} /> : null}

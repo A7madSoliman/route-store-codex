@@ -21,6 +21,7 @@ describe("safe returnTo normalization", () => {
     "/categories/category-1",
     "/products?sort=price",
     "/products?category%5Bin%5D=category-1&sort=price",
+    "/account/profile",
   ])("accepts implemented canonical destination %s", (candidate) => {
     expect(normalizeReturnTo(candidate)).toBe(candidate);
   });
@@ -34,7 +35,6 @@ describe("safe returnTo normalization", () => {
     "/products/%5Cother",
     "/products/../brands",
     "/products/%2e%2e/brands",
-    "/account/profile",
     "/products/nested/id",
     "/brands/brand-1?tab=all",
     "/products?unknown=value",

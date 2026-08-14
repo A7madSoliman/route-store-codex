@@ -21,10 +21,11 @@ const { values, cookieStore, cookiesMock } = vi.hoisted(() => {
 
 vi.mock("next/headers", () => ({ cookies: cookiesMock }));
 
-import { clearSession, getSession, getSessionToken, setSession } from "@/lib/auth/session.server";
+import { clearSession, getSession, getSessionIdentity, getSessionToken, setSession } from "@/lib/auth/session.server";
 
 const key = "A".repeat(43);
 const now = Math.floor(Date.now() / 1_000) + 3_600;
+const identity = { name: "Test User", email: "test@example.test" };
 
 function fixtureToken(): string {
   const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -51,11 +52,11 @@ describe("application session cookie", () => {
 
   it("writes the exact cookie contract and returns token-free session state", async () => {
     const token = fixtureToken();
-    await setSession(token);
+    await setSession(token, identity);
     expect(cookieStore.set).toHaveBeenCalledOnce();
     const [name, value, options] = cookieStore.set.mock.calls[0];
     expect(name).toBe("route-store-session");
-    expect(value).toMatch(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u);
+    expect(value).toMatch(/^v2\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u);
     expect(options).toMatchObject({
       httpOnly: true,
       sameSite: "lax",
@@ -68,11 +69,12 @@ describe("application session cookie", () => {
     expect(session).toHaveProperty("expiresAt");
     expect(session).not.toHaveProperty("token");
     await expect(getSessionToken()).resolves.toBe(token);
+    await expect(getSessionIdentity()).resolves.toEqual(identity);
   });
 
   it("uses Secure for HTTPS application origins", async () => {
     vi.stubEnv("APP_ORIGIN", "https://store.example.com");
-    await setSession(fixtureToken());
+    await setSession(fixtureToken(), identity);
     expect(cookieStore.set.mock.calls[0][2]).toMatchObject({ secure: true });
   });
 
@@ -83,7 +85,7 @@ describe("application session cookie", () => {
   });
 
   it("clears only the local application cookie", async () => {
-    await setSession(fixtureToken());
+    await setSession(fixtureToken(), identity);
     await clearSession();
     await expect(getSession()).resolves.toBeNull();
     expect(cookieStore.set).toHaveBeenCalledTimes(2);

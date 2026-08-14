@@ -12,7 +12,10 @@ export class SignupApiError extends Error {
   }
 }
 
-export async function signUp(input: { name: string; email: string; password: string; rePassword: string; phone: string }): Promise<{ token: string }> {
+export async function signUp(input: { name: string; email: string; password: string; rePassword: string; phone: string }): Promise<{
+  token: string;
+  user: { name: string; email: string; role: string };
+}> {
   try {
     const response = await publicPostJson(["auth", "signup"], {
       name: input.name,

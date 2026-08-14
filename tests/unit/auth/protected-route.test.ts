@@ -37,7 +37,7 @@ describe("protected route guard", () => {
     await expect(requireProtectedRoute("/products?sort=price")).rejects.toThrow("REDIRECT:/sign-in?returnTo=%2Fproducts%3Fsort%3Dprice");
   });
 
-  it.each(["https://evil.example/", "//evil.example/path", "/products\\secret", "/products#fragment", "/products/../brands", "/products/%2e%2e/brands", "/account/profile"])("delegates unsafe or unsupported candidate %s to the existing normalizer", (candidate) => {
+  it.each(["https://evil.example/", "//evil.example/path", "/products\\secret", "/products#fragment", "/products/../brands", "/products/%2e%2e/brands"])("delegates unsafe or unsupported candidate %s to the existing normalizer", (candidate) => {
     expect(buildProtectedSignInPath(candidate)).toBe("/sign-in?returnTo=%2F");
   });
 

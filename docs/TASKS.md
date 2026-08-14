@@ -452,7 +452,7 @@ Each milestone contains the same fields: Status, Outcome, Work, Verification, Co
 
 ### A08 — Implement profile update
 
-- **Status:** Planned.
+- **Status:** Complete.
 - **Outcome:** `/account/profile` updates only `name`, `email`, and `phone` from a verified identity source.
 - **Work:** Add protected form/adapter and safe reconciliation; omit avatar, country, bio, and other unsupported design fields.
 - **Verification:** Tests cover success, full/partial semantics as verified, conflicts, validation, expired auth, and missing initial identity.

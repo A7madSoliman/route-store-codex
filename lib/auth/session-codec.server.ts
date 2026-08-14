@@ -1,12 +1,17 @@
 import "server-only";
 
-const cookieVersion = "v1";
-const aad = "route-store-session:v1";
+const cookieVersion = "v2";
+const aad = "route-store-session:v2";
 const maxTokenCharacters = 2_048;
 const maxCookieValueCharacters = 3_800;
 
 export type SessionMetadata = Readonly<{
   expiresAt: Date;
+}>;
+
+export type SessionIdentity = Readonly<{
+  name: string;
+  email: string;
 }>;
 
 export class SessionValidationError extends Error {
@@ -78,13 +83,17 @@ function parseTokenExpiry(token: string, now: number): Date {
 export async function sealSessionToken(
   token: string,
   encryptionKey: string,
+  identity: SessionIdentity,
   now = Date.now(),
 ): Promise<Readonly<{ value: string; expiresAt: Date }>> {
   const expiresAt = parseTokenExpiry(token, now);
+  if (identity.name.trim().length === 0 || identity.email.trim().length === 0) {
+    throw new SessionValidationError();
+  }
   const key = await importKey(encryptionKey);
   const iv = new Uint8Array(12);
   globalThis.crypto.getRandomValues(iv);
-  const plaintext = new TextEncoder().encode(JSON.stringify({ v: 1, t: token }));
+  const plaintext = new TextEncoder().encode(JSON.stringify({ v: 2, t: token, i: identity }));
   const ciphertext = new Uint8Array(
     await globalThis.crypto.subtle.encrypt(
       {
@@ -106,7 +115,7 @@ export async function unsealSessionToken(
   value: string | undefined,
   encryptionKey: string,
   now = Date.now(),
-): Promise<Readonly<{ token: string; expiresAt: Date }> | null> {
+): Promise<Readonly<{ token: string; expiresAt: Date; identity: SessionIdentity }> | null> {
   if (!value || value.length > maxCookieValueCharacters) return null;
   try {
     const [version, encodedIv, encodedCiphertext, extra] = value.split(".");
@@ -131,15 +140,28 @@ export async function unsealSessionToken(
       typeof parsed !== "object" ||
       parsed === null ||
       Array.isArray(parsed) ||
-      Object.keys(payloadRecord).length !== 2 ||
-      payloadRecord.v !== 1 ||
-      typeof payloadRecord.t !== "string"
+      Object.keys(payloadRecord).length !== 3 ||
+      payloadRecord.v !== 2 ||
+      typeof payloadRecord.t !== "string" ||
+      typeof payloadRecord.i !== "object" ||
+      payloadRecord.i === null ||
+      Array.isArray(payloadRecord.i)
     ) {
       return null;
     }
     const token = payloadRecord.t as string;
+    const identity = payloadRecord.i as Record<string, unknown>;
+    if (
+      Object.keys(identity).length !== 2 ||
+      typeof identity.name !== "string" ||
+      identity.name.trim().length === 0 ||
+      typeof identity.email !== "string" ||
+      identity.email.trim().length === 0
+    ) {
+      return null;
+    }
     const expiresAt = parseTokenExpiry(token, now);
-    return Object.freeze({ token, expiresAt });
+    return Object.freeze({ token, expiresAt, identity: Object.freeze({ name: identity.name, email: identity.email }) });
   } catch {
     return null;
   }
